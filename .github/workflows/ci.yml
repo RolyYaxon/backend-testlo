@@ -24,26 +24,6 @@ jobs:
         sudo chmod +x /usr/local/bin/docker-compose
         docker-compose --version
 
-<<<<<<< Updated upstream
-    - name: Run Docker Compose
-      env:
-        APP_VERSION: "0.0.1"
-        STAGE: "prod"
-        DB_PASSWORD: "MySecr3tPassWord@as2"
-        DB_NAME: "TesloDB"
-        DB_HOST: "TesloDB"
-        DB_PORT: "5432"
-        DB_USERNAME: "postgres"
-        PORT: 3000
-        HOST_API: "http://localhost:3000/api"
-        JWT_SECRET: "Est3EsMiSE3DSecreto32s"
-      run: |
-        docker-compose -f ./docker-compose.yml up -d
-
-    - name: Tear down Docker Compose
-      run: docker-compose -f ./docker-compose.yml down
-
-=======
     - name: Run Docker Compose (dev environment)
       if: github.ref == 'refs/heads/dev' # Solo en la rama dev
       run: |
@@ -95,4 +75,3 @@ jobs:
     - name: Tear down Docker Compose (prod)
       if: github.ref == 'refs/heads/prod' 
       run: docker-compose -f ./docker-compose.yml down
->>>>>>> Stashed changes
