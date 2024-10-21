@@ -20,7 +20,7 @@ jobs:
         docker --version
 
     - name: Build Docker image
-      # Aquí especificamos la carpeta "backend-teslo"
+      # Cambiamos la ruta para apuntar a la carpeta "backend-teslo"
       run: docker build -t backend-teslo ./backend-teslo
 
     - name: Run Docker container
@@ -29,4 +29,3 @@ jobs:
     # Puedes agregar aquí las pruebas automatizadas si tienes test cases
     - name: Run tests
       run: docker exec backend-teslo ./run-tests.sh
-
