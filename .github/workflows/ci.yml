@@ -38,7 +38,16 @@ jobs:
         export HOST_API=http://localhost:3000/api
         export JWT_SECRET=Est3EsMISE3Dsecreto32s
         docker-compose -f ./docker-compose.yml up -d
-    
+    - name: Esperar a que el servicio esté disponible
+      run: |
+        until curl -f http://localhost:3000/api; do
+          echo "Esperando a que el servicio esté disponible..."
+          sleep 5
+        done
+
+    - name: Ejecutar seed en la base de datos
+      run: |
+        curl -X POST http://localhost:3000/api/seed || exit 1
 
     # No agregamos tear down para dev, para que los contenedores sigan en ejecución
 
