@@ -49,7 +49,7 @@ jobs:
       run: |
           response=$(curl -s -X GET http://localhost:3000/api/seed)
           echo "Seed response: $response"
-          if [[ "$response" != *"Seed executed"* ]]; then
+          if [[ "$response" != *"SEED EXECUTED"* ]]; then
             echo "Error: Seed no se ejecutó correctamente"
             exit 1
           fi
