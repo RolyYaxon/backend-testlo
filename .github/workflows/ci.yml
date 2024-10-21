@@ -19,15 +19,12 @@ jobs:
       run: docker --version
 
     - name: Run Docker Compose
-      working-directory: ./backend-testlo # Asegúrate de que este es el nombre correcto de la carpeta
       run: |
-        docker-compose up -d
+        docker-compose -f ./backend-testlo/docker-compose.yml up -d
 
     - name: Run tests
-      working-directory: ./backend-testlo
       run: |
-        docker-compose exec app npm test # O el comando que utilices para ejecutar tus pruebas
+        docker-compose exec app npm test # Cambia esto por el comando de pruebas adecuado
 
     - name: Tear down Docker Compose
-      working-directory: ./backend-testlo
-      run: docker-compose down
+      run: docker-compose -f ./backend-testlo/docker-compose.yml down
