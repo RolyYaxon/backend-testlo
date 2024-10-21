@@ -24,6 +24,7 @@ jobs:
         sudo chmod +x /usr/local/bin/docker-compose
         docker-compose --version
 
+<<<<<<< Updated upstream
     - name: Run Docker Compose
       env:
         APP_VERSION: "0.0.1"
@@ -42,3 +43,56 @@ jobs:
     - name: Tear down Docker Compose
       run: docker-compose -f ./docker-compose.yml down
 
+=======
+    - name: Run Docker Compose (dev environment)
+      if: github.ref == 'refs/heads/dev' # Solo en la rama dev
+      run: |
+        export APP_VERSION=0.0.1-dev
+        export STAGE=dev
+        export DB_PASSWORD=MySecr3tPassWord@as2
+        export DB_NAME=TesloDB
+        export DB_HOST=TesloDB
+        export DB_PORT=5432
+        export DB_USERNAME=postgres
+        export PORT=3000
+        export HOST_API=http://localhost:3000/api
+        export JWT_SECRET=Est3EsMISE3Dsecreto32s
+        docker-compose -f ./docker-compose.yml up -d
+
+    # No agregamos tear down para dev, para que los contenedores sigan en ejecución
+
+    - name: Run Docker Compose (qa environment)
+      if: github.ref == 'refs/heads/qa' # Solo en la rama qa
+      run: |
+        export APP_VERSION=0.0.1-qa
+        export STAGE=qa
+        export DB_PASSWORD=MySecr3tPassWord@as2
+        export DB_NAME=TesloDB
+        export DB_HOST=TesloDB
+        export DB_PORT=5432
+        export DB_USERNAME=postgres
+        export PORT=4000
+        export HOST_API=http://localhost:4000/api
+        export JWT_SECRET=Est3EsMISE3Dsecreto32s
+        docker-compose -f ./docker-compose.yml up -d
+
+    - name: Run Docker Compose (prod environment)
+      if: github.ref == 'refs/heads/prod' # Solo en la rama prod
+      run: |
+        export APP_VERSION=0.0.1-prod
+        export STAGE=prod
+        export DB_PASSWORD=MySecr3tPassWord@as2
+        export DB_NAME=TesloDB
+        export DB_HOST=TesloDB
+        export DB_PORT=5432
+        export DB_USERNAME=postgres
+        export PORT=5000
+        export HOST_API=http://localhost:5000/api
+        export JWT_SECRET=Est3EsMISE3Dsecreto32s
+        docker-compose -f ./docker-compose.yml up -d
+
+    # Tear down solo en prod
+    - name: Tear down Docker Compose (prod)
+      if: github.ref == 'refs/heads/prod' 
+      run: docker-compose -f ./docker-compose.yml down
+>>>>>>> Stashed changes
