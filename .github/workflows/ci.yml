@@ -25,12 +25,14 @@ jobs:
         docker-compose --version
 
     - name: Run Docker Compose
+      # Ajustamos la ruta relativa para subir un nivel y ejecutar docker-compose
       run: |
-        docker-compose -f ./backend-testlo/docker-compose.yml up -d
+        docker-compose -f ../docker-compose.yml up -d
 
     - name: Run tests
       run: |
         docker-compose exec app npm test # Cambia esto por el comando de pruebas adecuado
 
     - name: Tear down Docker Compose
-      run: docker-compose -f ./backend-testlo/docker-compose.yml down
+      run: docker-compose -f ../docker-compose.yml down
+
