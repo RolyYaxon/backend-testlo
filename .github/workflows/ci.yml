@@ -1,0 +1,43 @@
+name: CI/CD Pipeline with Docker Compose
+
+on:
+  push:
+    branches:
+      - dev
+      - qa
+      - prod
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Docker
+      run: docker --version
+
+    - name: Install Docker Compose
+      run: |
+        sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        docker-compose --version
+
+    - name: Run Docker Compose
+      env:
+        APP_VERSION: "0.0.1"
+        STAGE: "prod"
+        DB_PASSWORD: "MySecr3tPassWord@as2"
+        DB_NAME: "TesloDB"
+        DB_HOST: "TesloDB"
+        DB_PORT: "5432"
+        DB_USERNAME: "postgres"
+        PORT: "3000"
+        HOST_API: "http://localhost:3000/api"
+        JWT_SECRET: "Est3EsMISE3Dsecreto32s"
+      run: |
+        docker-compose -f ./docker-compose.yml up -d
+
+    - name: Tear down Docker Compose
+      run: docker-compose -f ./docker-compose.yml down
