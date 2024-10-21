@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline with Docker Compose
 
 on:
   push:
@@ -16,16 +16,18 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Set up Docker
+      run: docker --version
+
+    - name: Run Docker Compose
+      working-directory: ./backend-testlo # Asegúrate de que este es el nombre correcto de la carpeta
       run: |
-        docker --version
+        docker-compose up -d
 
-    - name: Build Docker image
-      # Cambia la ruta a "backend-testlo" (el nombre correcto de la carpeta)
-      run: docker build -t backend-testlo ./backend-testlo
-
-    - name: Run Docker container
-      run: docker run -d -p 8080:8080 backend-testlo
-
-    # Agregar pruebas automatizadas si es necesario
     - name: Run tests
-      run: docker exec backend-testlo ./run-tests.sh
+      working-directory: ./backend-testlo
+      run: |
+        docker-compose exec app npm test # O el comando que utilices para ejecutar tus pruebas
+
+    - name: Tear down Docker Compose
+      working-directory: ./backend-testlo
+      run: docker-compose down
