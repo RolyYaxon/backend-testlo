@@ -21,7 +21,7 @@ jobs:
 
     - name: Build Docker image
       # Aquí especificamos la carpeta "backend-teslo"
-      run: docker build -t backend-teslo ./backend-testlo
+      run: docker build -t backend-teslo ./backend-teslo
 
     - name: Run Docker container
       run: docker run -d -p 8080:8080 backend-teslo
