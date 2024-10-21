@@ -38,6 +38,9 @@ jobs:
         export HOST_API=http://localhost:3000/api
         export JWT_SECRET=Est3EsMISE3Dsecreto32s
         docker-compose -f ./docker-compose.yml up -d
+    - name: Test service
+      run: |
+          curl -f http://localhost:3000/api || exit 1
 
     # No agregamos tear down para dev, para que los contenedores sigan en ejecución
 
