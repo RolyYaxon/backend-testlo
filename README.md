@@ -23,3 +23,5 @@ Si desean saber más sobre docker y cómo se construyó esta imagen, esto es par
 [Cursos sobre Docker](https://fernando-herrera.com/#/search/docker)
 
 [Imagen en DockerHub](https://hub.docker.com/repository/docker/klerith/flutter-backend-teslo-shop/general)
+## Prueba del pipeline en la rama dev
+Este cambio es solo para probar la integración del pipeline en la rama `dev` con SonarQube y Docker.
