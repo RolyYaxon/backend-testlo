@@ -47,7 +47,13 @@ jobs:
 
     - name: Ejecutar seed en la base de datos
       run: |
-        curl -X POST http://localhost:3000/api/seed || exit 1
+          response=$(curl -s -X GET http://localhost:3000/api/seed)
+          echo "Seed response: $response"
+          if [[ "$response" != *"Seed executed"* ]]; then
+            echo "Error: Seed no se ejecutó correctamente"
+            exit 1
+          fi
+      
 
     # No agregamos tear down para dev, para que los contenedores sigan en ejecución
 
