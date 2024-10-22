@@ -1,0 +1,123 @@
+name: CI/CD Pipeline with Docker Compose
+
+on:
+  push:
+    branches:
+      - dev
+      - qa
+      - prod
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Docker
+      run: docker --version
+
+    - name: Install Docker Compose
+      run: |
+        sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        sudo chmod +x /usr/local/bin/docker-compose
+        docker-compose --version
+
+    - name: Run Docker Compose (dev environment)
+      if: github.ref == 'refs/heads/dev' # Solo en la rama dev
+      run: |
+        export APP_VERSION=0.0.1-dev
+        export STAGE=dev
+        export DB_PASSWORD=MySecr3tPassWord@as2
+        export DB_NAME=TesloDB
+        export DB_HOST=TesloDB
+        export DB_PORT=5432
+        export DB_USERNAME=postgres
+        export PORT=3000
+        export HOST_API=http://localhost:3000/api
+        export JWT_SECRET=Est3EsMISE3Dsecreto32s
+        docker-compose -f ./docker-compose.yml up -d
+    - name: Esperar a que el servicio esté disponible
+      run: |
+        until curl -f http://localhost:3000/api; do
+          echo "Esperando a que el servicio esté disponible..."
+          sleep 5
+        done
+
+    - name: Ejecutar seed en la base de datos
+      run: |
+          response=$(curl -s -X GET http://localhost:3000/api/seed)
+          echo "Seed response: $response"
+          if [[ "$response" != *"SEED EXECUTED"* ]]; then
+            echo "Error: Seed no se ejecutó correctamente"
+            exit 1
+          fi
+      
+
+    # No agregamos tear down para dev, para que los contenedores sigan en ejecución
+
+    - name: Run Docker Compose (qa environment)
+      if: github.ref == 'refs/heads/qa' # Solo en la rama qa
+      run: |
+        export APP_VERSION=0.0.1-qa
+        export STAGE=qa
+        export DB_PASSWORD=MySecr3tPassWord@as2
+        export DB_NAME=TesloDB
+        export DB_HOST=TesloDB
+        export DB_PORT=5432
+        export DB_USERNAME=postgres
+        export PORT=4000
+        export HOST_API=http://localhost:4000/api
+        export JWT_SECRET=Est3EsMISE3Dsecreto32s
+        docker-compose -f ./docker-compose.yml up -d
+    - name: Esperar a que el servicio esté disponible (qa)
+      run: |
+        until curl -f http://localhost:4000/api; do
+          echo "Esperando a que el servicio de QA esté disponible..."
+          sleep 5
+        done
+
+    - name: Ejecutar seed en la base de datos (qa)
+      run: |
+        response=$(curl -s -X GET http://localhost:4000/api/seed)
+        echo "Seed response: $response"
+        if [[ "$response" != *"SEED EXECUTED"* ]]; then
+          echo "Error: Seed no se ejecutó correctamente en QA"
+          exit 1
+        fi  
+
+    - name: Run Docker Compose (prod environment)
+      if: github.ref == 'refs/heads/prod' # Solo en la rama prod
+      run: |
+        export APP_VERSION=0.0.1-prod
+        export STAGE=prod
+        export DB_PASSWORD=MySecr3tPassWord@as2
+        export DB_NAME=TesloDB
+        export DB_HOST=TesloDB
+        export DB_PORT=5432
+        export DB_USERNAME=postgres
+        export PORT=5000
+        export HOST_API=http://localhost:5000/api
+        export JWT_SECRET=Est3EsMISE3Dsecreto32s
+        docker-compose -f ./docker-compose.yml up -d
+    - name: Esperar a que el servicio esté disponible (prod)
+      run: |
+        until curl -f http://localhost:5000/api; do
+          echo "Esperando a que el servicio de Producción esté disponible..."
+          sleep 5
+        done
+
+    - name: Ejecutar seed en la base de datos (prod)
+      run: |
+        response=$(curl -s -X GET http://localhost:5000/api/seed)
+        echo "Seed response: $response"
+        if [[ "$response" != *"SEED EXECUTED"* ]]; then
+          echo "Error: Seed no se ejecutó correctamente en Producción"
+          exit 1
+        fi
+
+    # Tear down solo en prod
+    - name: Tear down Docker Compose (prod)
+      if: github.ref == 'refs/heads/prod' 
+      run: docker-compose -f ./docker-compose.yml down
