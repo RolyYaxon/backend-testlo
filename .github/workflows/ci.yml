@@ -53,7 +53,7 @@ jobs:
             echo "Error: Seed no se ejecutó correctamente"
             exit 1
           fi
-      
+    
 
     # No agregamos tear down para dev, para que los contenedores sigan en ejecución
 
