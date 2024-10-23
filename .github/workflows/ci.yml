@@ -94,7 +94,7 @@ jobs:
 
     # Entorno prod
 
-    - name: Run Docker Compose (qa environment)
+    - name: Run Docker Compose (prod environment)
       if: github.ref == 'refs/heads/prod'
       run: |
         export APP_VERSION=0.0.1-prod
@@ -132,4 +132,15 @@ jobs:
     # Tear down solo en prod
     - name: Tear down Docker Compose (prod)
       if: github.ref == 'refs/heads/prod'
-      run: docker-compose -f ./docker-compose.yml down
+      run: |
+        export APP_VERSION=0.0.1-prod
+        export STAGE=prod
+        export DB_PASSWORD=MySecr3tPassWord@as2
+        export DB_NAME=TesloDB
+        export DB_HOST=TesloDB
+        export DB_PORT=5432
+        export DB_USERNAME=postgres
+        export PORT=5000
+        export HOST_API=http://localhost:5000/api
+        export JWT_SECRET=Est3EsMISE3Dsecreto32s
+        docker-compose -f ./docker-compose.yml down
