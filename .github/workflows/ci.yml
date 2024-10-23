@@ -157,8 +157,10 @@ jobs:
       env:
         NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
       run: |
-        ngrok authtoken $NGROK_AUTH_TOKEN
-        ngrok http 5000 & sleep 5
+        ./ngrok authtoken $NGROK_AUTH_TOKEN
+        ./ngrok http 5000 > ngrok-url.txt &
+         sleep 5
+        cat ngrok-url.txt
 
   # Tear down solo en prod
     - name: Tear down Docker Compose (prod)
