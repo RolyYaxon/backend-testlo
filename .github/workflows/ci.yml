@@ -24,12 +24,6 @@ jobs:
         sudo chmod +x /usr/local/bin/docker-compose
         docker-compose --version
 
-    - name: Install ngrok
-      run: |
-        curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
-        echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
-        sudo apt update && sudo apt install ngrok
-
     # Entorno dev
     - name: Run Docker Compose (dev environment)
       if: github.ref == 'refs/heads/dev'
@@ -46,11 +40,13 @@ jobs:
         export JWT_SECRET=Est3EsMISE3Dsecreto32s
         docker-compose -f ./docker-compose.yml up -d
 
-    - name: Expose dev environment via ngrok
+    - name: Esperar a que el servicio esté disponible (dev)
       if: github.ref == 'refs/heads/dev'
       run: |
-        ngrok http 3000 & sleep 5
-        curl $(curl -s http://localhost:4040/api/tunnels | jq -r .tunnels[0].public_url)
+        until curl -f http://localhost:3000/api; do
+          echo "Esperando a que el servicio dev esté disponible..."
+          sleep 5
+        done
 
     - name: Ejecutar seed en la base de datos (dev)
       if: github.ref == 'refs/heads/dev'
@@ -61,6 +57,15 @@ jobs:
           echo "Error: Seed no se ejecutó correctamente en dev"
           exit 1
         fi
+
+    # Exponer dev environment via ngrok
+    - name: Expose dev environment via ngrok
+      if: github.ref == 'refs/heads/dev'
+      env:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+      run: |
+        ./ngrok authtoken $NGROK_AUTH_TOKEN
+        ./ngrok http 3000 & sleep 5
 
     # Entorno qa
     - name: Run Docker Compose (qa environment)
@@ -78,11 +83,13 @@ jobs:
         export JWT_SECRET=Est3EsMISE3Dsecreto32s
         docker-compose -f ./docker-compose.yml up -d
 
-    - name: Expose qa environment via ngrok
+    - name: Esperar a que el servicio esté disponible (qa)
       if: github.ref == 'refs/heads/qa'
       run: |
-        ngrok http 4000 & sleep 5
-        curl $(curl -s http://localhost:4040/api/tunnels | jq -r .tunnels[0].public_url)
+        until curl -f http://localhost:4000/api; do
+          echo "Esperando a que el servicio qa esté disponible..."
+          sleep 5
+        done
 
     - name: Ejecutar seed en la base de datos (qa)
       if: github.ref == 'refs/heads/qa'
@@ -93,6 +100,15 @@ jobs:
           echo "Error: Seed no se ejecutó correctamente en qa"
           exit 1
         fi
+
+    # Exponer qa environment via ngrok
+    - name: Expose qa environment via ngrok
+      if: github.ref == 'refs/heads/qa'
+      env:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+      run: |
+        ./ngrok authtoken $NGROK_AUTH_TOKEN
+        ./ngrok http 4000 & sleep 5
 
     # Entorno prod
     - name: Run Docker Compose (prod environment)
@@ -110,11 +126,13 @@ jobs:
         export JWT_SECRET=Est3EsMISE3Dsecreto32s
         docker-compose -f ./docker-compose.yml up -d
 
-    - name: Expose prod environment via ngrok
+    - name: Esperar a que el servicio esté disponible (prod)
       if: github.ref == 'refs/heads/prod'
       run: |
-        ngrok http 5000 & sleep 5
-        curl $(curl -s http://localhost:4040/api/tunnels | jq -r .tunnels[0].public_url)
+        until curl -f http://localhost:5000/api; do
+          echo "Esperando a que el servicio prod esté disponible..."
+          sleep 5
+        done
 
     - name: Ejecutar seed en la base de datos (prod)
       if: github.ref == 'refs/heads/prod'
@@ -125,6 +143,15 @@ jobs:
           echo "Error: Seed no se ejecutó correctamente en prod"
           exit 1
         fi
+      
+    # Exponer prod environment via ngrok
+    - name: Expose prod environment via ngrok
+      if: github.ref == 'refs/heads/prod'
+      env:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+      run: |
+        ./ngrok authtoken $NGROK_AUTH_TOKEN
+        ./ngrok http 5000 & sleep 5
 
     # Tear down solo en prod
     - name: Tear down Docker Compose (prod)
