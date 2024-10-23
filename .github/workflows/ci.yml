@@ -161,7 +161,7 @@ jobs:
         ngrok http 5000 > ngrok-url.txt &
         sleep 5
         echo "Ngrok URL for prod environment:"
-        cat ngrok-url.txt
+        curl --silent http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url
 
   # Tear down solo en prod
     - name: Tear down Docker Compose (prod)
