@@ -24,8 +24,9 @@ jobs:
         sudo chmod +x /usr/local/bin/docker-compose
         docker-compose --version
 
+    # Entorno dev
     - name: Run Docker Compose (dev environment)
-      if: github.ref == 'refs/heads/dev' # Solo en la rama dev
+      if: github.ref == 'refs/heads/dev'
       run: |
         export APP_VERSION=0.0.1-dev
         export STAGE=dev
@@ -38,27 +39,28 @@ jobs:
         export HOST_API=http://localhost:3000/api
         export JWT_SECRET=Est3EsMISE3Dsecreto32s
         docker-compose -f ./docker-compose.yml up -d
-    - name: Esperar a que el servicio esté disponible
+
+    - name: Esperar a que el servicio esté disponible (dev)
+      if: github.ref == 'refs/heads/dev'
       run: |
         until curl -f http://localhost:3000/api; do
-          echo "Esperando a que el servicio esté disponible..."
+          echo "Esperando a que el servicio dev esté disponible..."
           sleep 5
         done
 
-    - name: Ejecutar seed en la base de datos
+    - name: Ejecutar seed en la base de datos (dev)
+      if: github.ref == 'refs/heads/dev'
       run: |
-          response=$(curl -s -X GET http://localhost:3000/api/seed)
-          echo "Seed response: $response"
-          if [[ "$response" != *"SEED EXECUTED"* ]]; then
-            echo "Error: Seed no se ejecutó correctamente"
-            exit 1
-          fi
-  
+        response=$(curl -s -X GET http://localhost:3000/api/seed)
+        echo "Seed response: $response"
+        if [[ "$response" != *"SEED EXECUTED"* ]]; then
+          echo "Error: Seed no se ejecutó correctamente en dev"
+          exit 1
+        fi
 
-    # No agregamos tear down para dev, para que los contenedores sigan en ejecución
-
+    # Entorno qa
     - name: Run Docker Compose (qa environment)
-      if: github.ref == 'refs/heads/qa' # Solo en la rama qa
+      if: github.ref == 'refs/heads/qa'
       run: |
         export APP_VERSION=0.0.1-qa
         export STAGE=qa
@@ -71,24 +73,28 @@ jobs:
         export HOST_API=http://localhost:4000/api
         export JWT_SECRET=Est3EsMISE3Dsecreto32s
         docker-compose -f ./docker-compose.yml up -d
-    - name: Esperar a que el servicio esté disponible
+
+    - name: Esperar a que el servicio esté disponible (qa)
+      if: github.ref == 'refs/heads/qa'
       run: |
         until curl -f http://localhost:4000/api; do
-          echo "Esperando a que el servicio esté disponible..."
+          echo "Esperando a que el servicio qa esté disponible..."
           sleep 5
         done
 
-    - name: Ejecutar seed en la base de datos
+    - name: Ejecutar seed en la base de datos (qa)
+      if: github.ref == 'refs/heads/qa'
       run: |
-          response=$(curl -s -X GET http://localhost:4000/api/seed)
-          echo "Seed response: $response"
-          if [[ "$response" != *"SEED EXECUTED"* ]]; then
-            echo "Error: Seed no se ejecutó correctamente"
-            exit 1
-          fi
+        response=$(curl -s -X GET http://localhost:4000/api/seed)
+        echo "Seed response: $response"
+        if [[ "$response" != *"SEED EXECUTED"* ]]; then
+          echo "Error: Seed no se ejecutó correctamente en qa"
+          exit 1
+        fi
 
+    # Entorno prod
     - name: Run Docker Compose (prod environment)
-      if: github.ref == 'refs/heads/prod' # Solo en la rama prod
+      if: github.ref == 'refs/heads/prod'
       run: |
         export APP_VERSION=0.0.1-prod
         export STAGE=prod
@@ -102,7 +108,25 @@ jobs:
         export JWT_SECRET=Est3EsMISE3Dsecreto32s
         docker-compose -f ./docker-compose.yml up -d
 
+    - name: Esperar a que el servicio esté disponible (prod)
+      if: github.ref == 'refs/heads/prod'
+      run: |
+        until curl -f http://localhost:5000/api; do
+          echo "Esperando a que el servicio prod esté disponible..."
+          sleep 5
+        done
+
+    - name: Ejecutar seed en la base de datos (prod)
+      if: github.ref == 'refs/heads/prod'
+      run: |
+        response=$(curl -s -X GET http://localhost:5000/api/seed)
+        echo "Seed response: $response"
+        if [[ "$response" != *"SEED EXECUTED"* ]]; then
+          echo "Error: Seed no se ejecutó correctamente en prod"
+          exit 1
+        fi
+
     # Tear down solo en prod
     - name: Tear down Docker Compose (prod)
-      if: github.ref == 'refs/heads/prod' 
+      if: github.ref == 'refs/heads/prod'
       run: docker-compose -f ./docker-compose.yml down
