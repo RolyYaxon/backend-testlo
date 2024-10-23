@@ -162,6 +162,12 @@ jobs:
         sleep 5
         echo "Ngrok URL for prod environment:"
         curl --silent http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url
+    # Mantener el túnel de Ngrok abierto por más tiempo
+    - name: Keep Ngrok Alive
+      if: github.ref == 'refs/heads/prod'
+      run: |
+        echo "Manteniendo Ngrok abierto durante 1 hora para pruebas..."
+        sleep 3600
 
   # Tear down solo en prod
     - name: Tear down Docker Compose (prod)
