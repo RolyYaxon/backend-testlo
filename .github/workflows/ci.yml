@@ -24,6 +24,13 @@ jobs:
         sudo chmod +x /usr/local/bin/docker-compose
         docker-compose --version
 
+    - name: Install ngrok
+      run: |
+        sudo apt-get update && sudo apt-get install -y unzip
+        curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc > /dev/null
+        echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+        sudo apt-get update && sudo apt-get install ngrok
+
     # Entorno dev
     - name: Run Docker Compose (dev environment)
       if: github.ref == 'refs/heads/dev'
@@ -58,6 +65,15 @@ jobs:
           exit 1
         fi
 
+    # Exponer dev environment via ngrok
+    - name: Expose dev environment via ngrok
+      if: github.ref == 'refs/heads/dev'
+      env:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+      run: |
+        ngrok authtoken $NGROK_AUTH_TOKEN
+        ngrok http 3000 & sleep 5
+
     # Entorno qa
     - name: Run Docker Compose (qa environment)
       if: github.ref == 'refs/heads/qa'
@@ -91,6 +107,24 @@ jobs:
           echo "Error: Seed no se ejecutó correctamente en qa"
           exit 1
         fi
+    # Exponer qa environment via ngrok
+    - name: Expose prod environment via ngrok
+      if: github.ref == 'refs/heads/qa'
+      env:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+      run: |
+        ngrok authtoken $NGROK_AUTH_TOKEN
+        ngrok http 4000 > ngrok-url.txt &
+        sleep 5
+        echo "Ngrok URL for qa environment:"
+        curl --silent http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url
+    # Mantener el túnel de Ngrok abierto por más tiempo
+    - name: Keep Ngrok Alive
+      if: github.ref == 'refs/heads/qa'
+      run: |
+        echo "Manteniendo Ngrok abierto durante 1 hora para pruebas..."
+        sleep 3600
+
 
     # Entorno prod
     - name: Run Docker Compose (prod environment)
@@ -125,8 +159,37 @@ jobs:
           echo "Error: Seed no se ejecutó correctamente en prod"
           exit 1
         fi
+      
+    # Exponer prod environment via ngrok
+    - name: Expose prod environment via ngrok
+      if: github.ref == 'refs/heads/prod'
+      env:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+      run: |
+        ngrok authtoken $NGROK_AUTH_TOKEN
+        ngrok http 5000 > ngrok-url.txt &
+        sleep 5
+        echo "Ngrok URL for prod environment:"
+        curl --silent http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url
+    # Mantener el túnel de Ngrok abierto por más tiempo
+    - name: Keep Ngrok Alive
+      if: github.ref == 'refs/heads/prod'
+      run: |
+        echo "Manteniendo Ngrok abierto durante 1 hora para pruebas..."
+        sleep 3600
 
-    # Tear down solo en prod
+  # Tear down solo en prod
     - name: Tear down Docker Compose (prod)
       if: github.ref == 'refs/heads/prod'
-      run: docker-compose -f ./docker-compose.yml down
+      run: |
+          export APP_VERSION=0.0.1-prod
+          export STAGE=prod
+          export DB_PASSWORD=MySecr3tPassWord@as2
+          export DB_NAME=TesloDB
+          export DB_HOST=TesloDB
+          export DB_PORT=5432
+          export DB_USERNAME=postgres
+          export PORT=5000
+          export HOST_API=http://localhost:5000/api
+          export JWT_SECRET=Est3EsMISE3Dsecreto32s
+          docker-compose -f ./docker-compose.yml down
