@@ -159,7 +159,8 @@ jobs:
       run: |
         ngrok authtoken $NGROK_AUTH_TOKEN
         ngrok http 5000 > ngrok-url.txt &
-         sleep 5
+        sleep 5
+        echo "Ngrok URL for prod environment:"
         cat ngrok-url.txt
 
   # Tear down solo en prod
@@ -177,9 +178,3 @@ jobs:
           export HOST_API=http://localhost:5000/api
           export JWT_SECRET=Est3EsMISE3Dsecreto32s
           docker-compose -f ./docker-compose.yml down
-
-    # Limpiar ngrok (opcional)
-    - name: Clean up ngrok processes
-      if: github.ref == 'refs/heads/prod'
-      run: |
-        pkill ngrok
