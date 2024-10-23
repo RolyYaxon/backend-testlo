@@ -161,7 +161,7 @@ jobs:
         ngrok http 5000 > ngrok-url.txt &
         sleep 5
         echo "Ngrok URL for prod environment:"
-        curl --silent http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url
+        curl --silent http://127.0.0.0:4040/api/tunnels | jq -r .tunnels[0].public_url
     # Mantener el túnel de Ngrok abierto por más tiempo
     - name: Keep Ngrok Alive
       if: github.ref == 'refs/heads/prod'
