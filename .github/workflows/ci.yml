@@ -71,6 +71,21 @@ jobs:
         export HOST_API=http://localhost:4000/api
         export JWT_SECRET=Est3EsMISE3Dsecreto32s
         docker-compose -f ./docker-compose.yml up -d
+    - name: Esperar a que el servicio esté disponible
+      run: |
+        until curl -f http://localhost:4000/api; do
+          echo "Esperando a que el servicio esté disponible..."
+          sleep 5
+        done
+
+    - name: Ejecutar seed en la base de datos
+      run: |
+          response=$(curl -s -X GET http://localhost:4000/api/seed)
+          echo "Seed response: $response"
+          if [[ "$response" != *"SEED EXECUTED"* ]]; then
+            echo "Error: Seed no se ejecutó correctamente"
+            exit 1
+          fi
 
     - name: Run Docker Compose (prod environment)
       if: github.ref == 'refs/heads/prod' # Solo en la rama prod
