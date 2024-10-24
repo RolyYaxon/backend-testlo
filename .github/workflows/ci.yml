@@ -24,8 +24,16 @@ jobs:
         sudo chmod +x /usr/local/bin/docker-compose
         docker-compose --version
 
+    - name: Install ngrok
+      run: |
+        sudo apt-get update && sudo apt-get install -y unzip
+        curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc > /dev/null
+        echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | sudo tee /etc/apt/sources.list.d/ngrok.list
+        sudo apt-get update && sudo apt-get install ngrok
+
+    # Entorno dev
     - name: Run Docker Compose (dev environment)
-      if: github.ref == 'refs/heads/dev' # Solo en la rama dev
+      if: github.ref == 'refs/heads/dev'
       run: |
         export APP_VERSION=0.0.1-dev
         export STAGE=dev
@@ -38,27 +46,47 @@ jobs:
         export HOST_API=http://localhost:3000/api
         export JWT_SECRET=Est3EsMISE3Dsecreto32s
         docker-compose -f ./docker-compose.yml up -d
-    - name: Esperar a que el servicio esté disponible
+
+    - name: Esperar a que el servicio esté disponible (dev)
+      if: github.ref == 'refs/heads/dev'
       run: |
         until curl -f http://localhost:3000/api; do
-          echo "Esperando a que el servicio esté disponible..."
+          echo "Esperando a que el servicio dev esté disponible..."
           sleep 5
         done
 
-    - name: Ejecutar seed en la base de datos
+    - name: Ejecutar seed en la base de datos (dev)
+      if: github.ref == 'refs/heads/dev'
       run: |
-          response=$(curl -s -X GET http://localhost:3000/api/seed)
-          echo "Seed response: $response"
-          if [[ "$response" != *"SEED EXECUTED"* ]]; then
-            echo "Error: Seed no se ejecutó correctamente"
-            exit 1
-          fi
-    
+        response=$(curl -s -X GET http://localhost:3000/api/seed)
+        echo "Seed response: $response"
+        if [[ "$response" != *"SEED EXECUTED"* ]]; then
+          echo "Error: Seed no se ejecutó correctamente en dev"
+          exit 1
+        fi
 
-    # No agregamos tear down para dev, para que los contenedores sigan en ejecución
+    # Exponer dev environment via ngrok
+    - name: Expose dev environment via ngrok
+      if: github.ref == 'refs/heads/dev'
+      env:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+      run: |
+        ngrok authtoken $NGROK_AUTH_TOKEN
+        ngrok http 3000 > ngrok-url.txt &
+        sleep 5
+        echo "Ngrok URL for prod environment:"
+        curl --silent http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url
+    # Mantener el túnel de Ngrok abierto por más tiempo
+    - name: Keep Ngrok Alive
+      if: github.ref == 'refs/heads/dev'
+      run: |
+        echo "Manteniendo Ngrok abierto durante 1 hora para pruebas..."
+        sleep 3600
 
+
+    # Entorno qa
     - name: Run Docker Compose (qa environment)
-      if: github.ref == 'refs/heads/qa' # Solo en la rama qa
+      if: github.ref == 'refs/heads/qa'
       run: |
         export APP_VERSION=0.0.1-qa
         export STAGE=qa
@@ -72,8 +100,45 @@ jobs:
         export JWT_SECRET=Est3EsMISE3Dsecreto32s
         docker-compose -f ./docker-compose.yml up -d
 
+    - name: Esperar a que el servicio esté disponible (qa)
+      if: github.ref == 'refs/heads/qa'
+      run: |
+        until curl -f http://localhost:4000/api; do
+          echo "Esperando a que el servicio qa esté disponible..."
+          sleep 5
+        done
+
+    - name: Ejecutar seed en la base de datos (qa)
+      if: github.ref == 'refs/heads/qa'
+      run: |
+        response=$(curl -s -X GET http://localhost:4000/api/seed)
+        echo "Seed response: $response"
+        if [[ "$response" != *"SEED EXECUTED"* ]]; then
+          echo "Error: Seed no se ejecutó correctamente en qa"
+          exit 1
+        fi
+    # Exponer qa environment via ngrok
+    - name: Expose prod environment via ngrok
+      if: github.ref == 'refs/heads/qa'
+      env:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+      run: |
+        ngrok authtoken $NGROK_AUTH_TOKEN
+        ngrok http 4000 > ngrok-url.txt &
+        sleep 5
+        echo "Ngrok URL for qa environment:"
+        curl --silent http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url
+    # Mantener el túnel de Ngrok abierto por más tiempo
+    - name: Keep Ngrok Alive
+      if: github.ref == 'refs/heads/qa'
+      run: |
+        echo "Manteniendo Ngrok abierto durante 1 hora para pruebas..."
+        sleep 3600
+
+
+    # Entorno prod
     - name: Run Docker Compose (prod environment)
-      if: github.ref == 'refs/heads/prod' # Solo en la rama prod
+      if: github.ref == 'refs/heads/prod'
       run: |
         export APP_VERSION=0.0.1-prod
         export STAGE=prod
@@ -87,7 +152,54 @@ jobs:
         export JWT_SECRET=Est3EsMISE3Dsecreto32s
         docker-compose -f ./docker-compose.yml up -d
 
-    # Tear down solo en prod
+    - name: Esperar a que el servicio esté disponible (prod)
+      if: github.ref == 'refs/heads/prod'
+      run: |
+        until curl -f http://localhost:5000/api; do
+          echo "Esperando a que el servicio prod esté disponible..."
+          sleep 5
+        done
+
+    - name: Ejecutar seed en la base de datos (prod)
+      if: github.ref == 'refs/heads/prod'
+      run: |
+        response=$(curl -s -X GET http://localhost:5000/api/seed)
+        echo "Seed response: $response"
+        if [[ "$response" != *"SEED EXECUTED"* ]]; then
+          echo "Error: Seed no se ejecutó correctamente en prod"
+          exit 1
+        fi
+      
+    # Exponer prod environment via ngrok
+    - name: Expose prod environment via ngrok
+      if: github.ref == 'refs/heads/prod'
+      env:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+      run: |
+        ngrok authtoken $NGROK_AUTH_TOKEN
+        ngrok http 5000 > ngrok-url.txt &
+        sleep 5
+        echo "Ngrok URL for prod environment:"
+        curl --silent http://127.0.0.1:4040/api/tunnels | jq -r .tunnels[0].public_url
+    # Mantener el túnel de Ngrok abierto por más tiempo
+    - name: Keep Ngrok Alive
+      if: github.ref == 'refs/heads/prod'
+      run: |
+        echo "Manteniendo Ngrok abierto durante 1 hora para pruebas..."
+        sleep 3600
+
+  # Tear down solo en prod
     - name: Tear down Docker Compose (prod)
-      if: github.ref == 'refs/heads/prod' 
-      run: docker-compose -f ./docker-compose.yml down
+      if: github.ref == 'refs/heads/prod'
+      run: |
+          export APP_VERSION=0.0.1-prod
+          export STAGE=prod
+          export DB_PASSWORD=MySecr3tPassWord@as2
+          export DB_NAME=TesloDB
+          export DB_HOST=TesloDB
+          export DB_PORT=5432
+          export DB_USERNAME=postgres
+          export PORT=5000
+          export HOST_API=http://localhost:5000/api
+          export JWT_SECRET=Est3EsMISE3Dsecreto32s
+          docker-compose -f ./docker-compose.yml down
